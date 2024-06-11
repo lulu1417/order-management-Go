@@ -118,6 +118,7 @@ func UpdateOrder(c *gin.Context) {
 		} else {
 			if !checkProductExist(item.ProductID) {
 				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"message": "product not found"})
 				return
 			}
 
