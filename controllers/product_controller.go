@@ -66,6 +66,11 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 
+	if !canDelete(product.ID) {
+		c.JSON(http.StatusNotFound, gin.H{"message": "product exists in order items"})
+		return
+	}
+
 	database.GetDB().Delete(&product)
 	c.JSON(http.StatusOK, gin.H{"success": "true"})
 }
@@ -74,5 +79,12 @@ func checkNameUnique(name string) bool {
 	var count int
 	var product models.Product
 	database.GetDB().Where("name = ?", name).First(&product).Count(&count)
+	return count == 0
+}
+
+func canDelete(productId uint) bool {
+	var count int
+	var item models.OrderItem
+	database.GetDB().Where("product_id = ?", productId).First(&item).Count(&count)
 	return count == 0
 }
