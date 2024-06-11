@@ -15,16 +15,16 @@ func main() {
 
 	router := gin.Default()
 
-	router.POST("/products", controllers.CreateProduct)
-	router.GET("/products", controllers.GetProducts)
-	router.GET("/products/:id", controllers.GetProduct)
-	router.PUT("/products/:id", controllers.UpdateProduct)
-	router.DELETE("/products/:id", controllers.DeleteProduct)
-	router.POST("/orders", controllers.CreateOrder)
-	router.GET("/orders", controllers.GetOrders)
-	router.GET("/orders/:id", controllers.GetOrder)
-	router.PUT("/orders/:id", controllers.UpdateOrder)
-	router.DELETE("/orders/:id", controllers.DeleteOrder)
+	router.POST("/api/products", controllers.CreateProduct)
+	router.GET("/api/products", controllers.GetProducts)
+	router.GET("/api/products/:id", controllers.GetProduct)
+	router.PUT("/api/products/:id", controllers.UpdateProduct)
+	router.DELETE("/api/products/:id", controllers.DeleteProduct)
+	router.POST("/api/orders", controllers.CreateOrder)
+	router.GET("/api/orders", controllers.GetOrders)
+	router.GET("/api/orders/:id", controllers.GetOrder)
+	router.PUT("/api/orders/:id", controllers.UpdateOrder)
+	router.DELETE("/api/orders/:id", controllers.DeleteOrder)
 
 	router.Run(":8000")
 }
