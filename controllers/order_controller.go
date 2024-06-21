@@ -1,13 +1,11 @@
 package controllers
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"net/http"
 	"order-management-Go/database"
 	"order-management-Go/models"
-	"time"
 )
 
 func CreateOrder(c *gin.Context) {
@@ -17,7 +15,7 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	order.NO = generateOrderNo(time.Now())
+	order.NO = generateOrderNo()
 
 	for i := range order.Items {
 		productID := order.Items[i].ProductID
@@ -37,10 +35,8 @@ func CreateOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": "true"})
 }
 
-func generateOrderNo(t time.Time) string {
-	hash := sha256.New()
-	hash.Write([]byte(t.Format(time.RFC3339Nano)))
-	return hex.EncodeToString(hash.Sum(nil))
+func generateOrderNo() string {
+	return uuid.New().String()
 }
 
 func GetOrders(c *gin.Context) {
@@ -90,6 +86,12 @@ func UpdateOrder(c *gin.Context) {
 
 	for _, item := range requestData.Items {
 		if item.ID != 0 {
+			if !checkItemExist(item.ID, orderID) {
+				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"error": "OrderItem not found"})
+				return
+			}
+
 			if item.Delete {
 				if err := tx.Delete(&models.OrderItem{}, item.ID).Error; err != nil {
 					tx.Rollback()
@@ -97,17 +99,12 @@ func UpdateOrder(c *gin.Context) {
 					return
 				}
 			} else {
-				if !checkProductExist(item.ProductID) {
+				if item.ProductID != 0 && !checkProductExist(item.ProductID) {
 					tx.Rollback()
 					c.JSON(http.StatusNotFound, gin.H{"message": "product not found"})
 					return
 				}
 				var orderItem models.OrderItem
-				if err := tx.First(&orderItem, item.ID).Error; err != nil {
-					tx.Rollback()
-					c.JSON(http.StatusNotFound, gin.H{"error": "OrderItem not found"})
-					return
-				}
 
 				if err := tx.Model(&orderItem).Updates(item).Error; err != nil {
 					tx.Rollback()
@@ -119,6 +116,12 @@ func UpdateOrder(c *gin.Context) {
 			if !checkProductExist(item.ProductID) {
 				tx.Rollback()
 				c.JSON(http.StatusNotFound, gin.H{"message": "product not found"})
+				return
+			}
+
+			if item.Count < 1 {
+				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"message": "item count must greater than 0"})
 				return
 			}
 
@@ -167,9 +170,9 @@ func checkProductExist(id uint) bool {
 	return true
 }
 
-func checkItemExist(id uint) bool {
+func checkItemExist(itemId uint, orderId string) bool {
 	var item models.OrderItem
-	if err := database.GetDB().First(&item, id).Error; err != nil {
+	if err := database.GetDB().Where("id = ? AND order_id = ?", itemId, orderId).First(&item).Error; err != nil {
 		return false
 	}
 	return true
